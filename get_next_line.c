@@ -1,158 +1,122 @@
-#include "get_next_line_bonus.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ldubuche <laura.dubuche@gmail.com>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/12/22 17:13:58 by ldubuche          #+#    #+#             */
+/*   Updated: 2021/12/22 18:42:34 by ldubuche         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-char	*read_line(char *current_read, char **str, int fd);
-void	free_str(char **str);
+#include "get_next_line.h"
 
-char	*get_next_line(int fd) //erreur fd <= 0, fd > FD_MAX, BUFFER_SIZE inférieur à zéro (+ trop grande ?)
+char	*fill_buffer(char *current_read, char *buffer, int fd);
+char	*ft_buffjoin(char *buffer, char *str, char *to_free);
+char	*r_value(char **buffer);
+char	*free_str(char *str);
+
+char	*get_next_line(int fd)
 {
-	static char *BUFFER;
+	static char	*buffer = NULL;
 	char		*current_read;
 	int			len;
-
-	//printf("fd %d\n", fd);
-	//printf("Buffer size = %d\n", BUFFER_SIZE);
+	
 	if (fd <= 0 || fd > FD_MAX || BUFFER_SIZE <= 0)
 		return (NULL);
-	//printf("ERROR1\n");
-	
-	
-	current_read = (char *) malloc(sizeof(char) * (BUFFER_SIZE + 1)); //chaine que l'on renvoie, free par le programme
+	current_read = (char *) malloc(sizeof(char) * (BUFFER_SIZE + 1));
 	if (!current_read)
 		return (NULL);
 	len = read(fd, current_read, BUFFER_SIZE);
-	//printf("len %d\n", len);	
-	
 	if (len < 0)
-	{
-		free(current_read);
-		return (NULL);
-	}
+		return (free_str(current_read));
 	current_read[len] = '\0';
-	
-	if (current_read[0] == '\0')
+	if (len > 0)
 	{
-		//printf(" str address after end  %p\n", BUFFER);
-		if (BUFFER != NULL)
-			free(BUFFER);
-		free(current_read);
-		return (NULL);
+		buffer = fill_buffer(current_read, buffer, fd);
+		if (buffer == NULL)
+			return (free_str(current_read));
 	}
-
-	if (!BUFFER)
-		BUFFER = ft_strdup(""); //free quand arrivé à la fin du fichier ou à la fin du programme
-	if (!BUFFER)
-		return (NULL);
-
-	current_read = read_line(current_read, &BUFFER, fd);
-	//printf("current %s\n", current_read);
-	return (current_read);
+	else if (len == 0 && buffer[0] == '\0')
+	{
+		return (free_str(current_read));
+	}
+	return (r_value(&buffer));
 }
 
-char	*read_line(char *current_read, char **str, int fd)
+char	*fill_buffer(char *current_read, char *buffer, int fd)
 {
-	char	*temp;
 	int		len;
-	char	*retour;
-	char 	*nl_position;
-	int		i;
 
-	temp = NULL;
 	len = 1;
-	while (ft_strrchr(*str, '\n') == NULL && len != 0)
+	if (!buffer)
 	{
-		//printf(" str address %p\n", *str);
-		temp = *str;
-		*str = ft_strjoin(*str, current_read); //on envoie 2 string, str free par swap et current que l'on réecrit donc pas de free
-		if (!*str)
+		buffer = ft_strdup("");
+		if (!buffer)
+			return (free_str(buffer));
+	}
+	while (ft_strrchr(buffer, '\n') == NULL && len != 0)
+	{
+		buffer = ft_buffjoin(buffer, current_read, buffer);
+		if (!buffer)
 			return (NULL);
-		free(temp); //free ancienne str
-		if (ft_strrchr(*str, '\n') == NULL)
-		{	len = read(fd, current_read, BUFFER_SIZE);
+		if (ft_strrchr(buffer, '\n') == NULL)
+		{	
+			len = read(fd, current_read, BUFFER_SIZE);
 			if (len < 0)
 				return (NULL);
-			current_read[len] = '\0';		
+			current_read[len] = '\0';
 		}
 	}
-	//printf("str after while %s.", *str);
-	nl_position = ft_strrchr(*str, '\n');
+	if (current_read != NULL)
+		free(current_read);
+	return (buffer);
+}
+
+char	*r_value(char **buffer)
+{
+	int		len;
+	char	*retour;
+	char	*nl_position;
+	int		i;
+
+	nl_position = ft_strrchr(*buffer, '\n');
 	if (nl_position)
-	{
-		len = nl_position - *str + 1;
-		//printf("len %d\n", len);
-		retour = (char *) malloc(sizeof(char) * len+1);
-		if (!retour)
-			return (NULL);
-		i = 0;
-		while (len--)
-		{
-			retour[i] = (*str)[i];
-			i++;
-		}
-		retour[i] = '\0';
-		temp = *str;
-		*str = ft_strjoin("", nl_position+1);
-		if (!*str)
-			return (NULL);
-		//printf(" str address after retour %p\n", *str);
-		free(temp);
-		free(current_read);
-		return (retour);
-	}
+		len = nl_position - *buffer + 1;
 	else
+		len = ft_strlen(*buffer);
+	retour = (char *) malloc(sizeof(char) * len + 1);
+	if (!retour)
+		return (free_str(*buffer));
+	i = 0;
+	while (len--)
 	{
-		if ((*str)[0] == '\0')
-		{
-			printf(" str address after end big f %p\n", *str);
-			free(*str);
-			free(current_read);
-			return (NULL);
-		}
-		len = ft_strlen(*str);
-		retour = (char *) malloc(sizeof(char) * len +1);
-		if (!retour)
-			return (NULL);
-		i = 0;
-		while (len--)
-		{
-			retour[i] = (*str)[i];
-			i++;
-		}
-		retour[i] = '\0';
-		temp = *str;
-		*str = ft_strjoin("", *str+i);
-		if (!*str)
-			return (NULL);
-		free(temp);
-		//printf(" str address after no nl %p\n", *str);
-		free(current_read);
-		//printf("temp %p", temp);
-		return (retour);
+		retour[i] = (*buffer)[i];
+		i++;
 	}
+	retour[i] = '\0';
+	if (nl_position)
+		*buffer = ft_buffjoin("", nl_position + 1, *buffer);
+	else
+		*buffer = ft_buffjoin("", *buffer + i, *buffer);
+	if (!(*buffer))
+		return (free_str(*buffer));
+	return (retour);
 }
 
-void	free_str(char **str)
+char	*ft_buffjoin(char *buffer, char *str, char *to_free)
 {
-	if (!str)
-		free(*str);
-	str = NULL;
+	buffer = ft_strjoin(buffer, str);
+	if (!buffer)
+		return (NULL);
+	free(to_free);
+	return (buffer);
 }
 
-/*int main(void)
+char	*free_str(char *str)
 {
-	int	 fd = open("big_line.txt", O_RDONLY);
-	char	*line;
-	if (fd <= 0)
-	write(1, "fail to open file", 17);
-	//printf("fd = %d\n", fd);
-	line = get_next_line(fd);
-	//printf("%s", line);
-	while (line != NULL)
-	{
-		printf("%s", line);
-		if (line != NULL)
-			free(line);
-		line = get_next_line(fd);
-		
-	}
-	return (0);
-}*/
+	if (str != NULL)
+		free(str);
+	return (NULL);
+}

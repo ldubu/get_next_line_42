@@ -35,7 +35,7 @@ char	*ft_strrchr(const char *s, int c)
 		//printf("strrchr %d", b);
 		if (*s == a)
 			return ((char *)s);
-			s++;
+		s++;
 	}
 	return (NULL);
 }
