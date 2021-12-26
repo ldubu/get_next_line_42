@@ -1,3 +1,6 @@
 .vscode*
 gnlTest*
 a.out
+test 
+*.o
+laura

@@ -23,6 +23,7 @@ char	*get_next_line(int fd)
 	char		*current_read;
 	int			len;
 	
+	//printf("enter fonction\n");
 	if (fd <= 0 || fd > FD_MAX || BUFFER_SIZE <= 0)
 		return (NULL);
 	current_read = (char *) malloc(sizeof(char) * (BUFFER_SIZE + 1));
@@ -32,16 +33,24 @@ char	*get_next_line(int fd)
 	if (len < 0)
 		return (free_str(current_read));
 	current_read[len] = '\0';
+	//printf("read len %d\n", len);
 	if (len > 0)
 	{
 		buffer = fill_buffer(current_read, buffer, fd);
+		//printf("buffer after fill :.%s.\n", buffer);
 		if (buffer == NULL)
 			return (free_str(current_read));
 	}
-	else if (len == 0 && buffer[0] == '\0')
+	else if (len == 0 && (!buffer || buffer[0] == '\0'))
 	{
+		if (buffer != NULL)
+			free(buffer);
 		return (free_str(current_read));
 	}
+	if (current_read != NULL)
+		free(current_read);
+	current_read = NULL;
+	//printf("buffer :.%s.\n", buffer);
 	return (r_value(&buffer));
 }
 
@@ -49,6 +58,7 @@ char	*fill_buffer(char *current_read, char *buffer, int fd)
 {
 	int		len;
 
+	//printf("enter fill\n");
 	len = 1;
 	if (!buffer)
 	{
@@ -56,11 +66,12 @@ char	*fill_buffer(char *current_read, char *buffer, int fd)
 		if (!buffer)
 			return (free_str(buffer));
 	}
+	buffer = ft_buffjoin(buffer, current_read, buffer);
+	if (!buffer)
+		return (NULL);
+	//printf("buffer fill :.%s.\n", buffer);
 	while (ft_strrchr(buffer, '\n') == NULL && len != 0)
 	{
-		buffer = ft_buffjoin(buffer, current_read, buffer);
-		if (!buffer)
-			return (NULL);
 		if (ft_strrchr(buffer, '\n') == NULL)
 		{	
 			len = read(fd, current_read, BUFFER_SIZE);
@@ -68,9 +79,11 @@ char	*fill_buffer(char *current_read, char *buffer, int fd)
 				return (NULL);
 			current_read[len] = '\0';
 		}
+		buffer = ft_buffjoin(buffer, current_read, buffer);
+		if (!buffer)
+			return (NULL);
+		//printf("buffer fill :.%s.\n", buffer);
 	}
-	if (current_read != NULL)
-		free(current_read);
 	return (buffer);
 }
 
@@ -102,6 +115,8 @@ char	*r_value(char **buffer)
 		*buffer = ft_buffjoin("", *buffer + i, *buffer);
 	if (!(*buffer))
 		return (free_str(*buffer));
+	//printf("retour = .%s.\n", retour);
+	//printf("buffer retour :.%s.\n", *buffer);
 	return (retour);
 }
 
