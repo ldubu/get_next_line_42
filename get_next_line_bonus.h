@@ -12,7 +12,7 @@
 # endif
 
 # ifndef BUFFER_SIZE
-#  define BUFFER_SIZE 10 //se renseigner si on ne donne pas de buffer size si on est sensé en mettre une part défault ou non
+#  define BUFFER_SIZE 100
 # endif
 
 char	*ft_strjoin(char const *s1, char const*s2);

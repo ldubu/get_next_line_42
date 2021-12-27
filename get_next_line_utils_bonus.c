@@ -31,8 +31,11 @@ char	*ft_strrchr(const char *s, int c)
 	if (a == '\0')
 		return ((char *)s + b);
 	while (--b >= 0)
-		if (s[b] == a)
-			return ((char *)s + b);
+	{
+		if (*s == a)
+			return ((char *)s);
+		s++;
+	}
 	return (NULL);
 }
 

@@ -1,157 +1,125 @@
-#include "get_next_line_bonus.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ldubuche <laura.dubuche@gmail.com>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/12/22 17:13:58 by ldubuche          #+#    #+#             */
+/*   Updated: 2021/12/27 14:14:35 by ldubuche         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-char	*read_line(char *current_read, char **str, int fd);
-void	free_str(char **str);
+#include "get_next_line.h"
 
-char	*get_next_line(int fd) //erreur fd <= 0, fd > FD_MAX, BUFFER_SIZE inférieur à zéro (+ trop grande ?)
+char	*fill_buffer(char *current_read, char *buffer, int fd);
+char	*ft_buffjoin(char *buffer, char *str, char *to_free);
+char	*r_value(char **buffer);
+char	*free_str(char *str);
+
+char	*get_next_line(int fd)
 {
-	static char *BUFFER[FD_MAX];
+	static char	*buffer[FD_MAX];
 	char		*current_read;
 	int			len;
 
-	//printf("fd %d\n", fd);
-	//printf("Buffer size = %d\n", BUFFER_SIZE);
-	if (fd <= 0 || fd > FD_MAX || BUFFER_SIZE <= 0)
+	if (fd < 0 || fd > FD_MAX || BUFFER_SIZE <= 0) //gestion d'erreur d'input
 		return (NULL);
-	//printf("ERROR1\n");
-	
-	
-	current_read = (char *) malloc(sizeof(char) * (BUFFER_SIZE + 1)); //chaine que l'on renvoie, free par le programme
+	current_read = (char *) malloc(sizeof(char) * (BUFFER_SIZE + 1)); //allocation current read
 	if (!current_read)
 		return (NULL);
-	len = read(fd, current_read, BUFFER_SIZE);
-	//printf("len %d\n", len);	
-	
+	len = read(fd, current_read, BUFFER_SIZE); //on lit la premiere ligne
 	if (len < 0)
-	{
-		free(current_read);
-		return (NULL);
-	}
+		return (free_str(current_read));
 	current_read[len] = '\0';
-	
-	if (current_read[0] == '\0')
+	if (len > 0) //si len > 0, on a lu quelque chose, on appelle alors la fonction pur remplir le buffer
 	{
-		//printf(" str address after end  %p\n", BUFFER[fd]);
-		if (BUFFER[fd] != NULL)
-			free(BUFFER[fd]);
-		free(current_read);
-		return (NULL);
+		buffer[fd] = fill_buffer(current_read, buffer[fd], fd);
+		if (buffer[fd] == NULL)
+			return (free_str(current_read));
 	}
-
-	if (!BUFFER[fd])
-		BUFFER[fd] = ft_strdup(""); //free quand arrivé à la fin du fichier ou à la fin du programme
-	if (!BUFFER[fd])
-		return (NULL);
-
-	current_read = read_line(current_read, &BUFFER[fd], fd);
-	printf("current %s\n", current_read);
-	return (current_read);
+	else if (len == 0 && (!buffer[fd] || buffer[fd][0] == '\0')) //si on ne lit rien et qu'on est a la fin du buffer on retourne NULL
+	{
+		free_str(buffer[fd]);
+		return (free_str(current_read));
+	}
+	free_str(current_read); //on free current_read
+	return (r_value(&buffer[fd])); //fonction qui creer la chaine que l'on retourne et qui la supprime du buffer
 }
 
-char	*read_line(char *current_read, char **str, int fd)
+char	*fill_buffer(char *current_read, char *buffer, int fd)
 {
-	char	*temp;
+	int		len;
+
+	len = 1;
+	if (!buffer) //a la premiere lecture, on alloue une chaine vide au buffer
+	{
+		buffer = ft_strdup("");
+		if (!buffer)
+			return (free_str(buffer));
+	}
+	buffer = ft_buffjoin(buffer, current_read, buffer); //dans le cas ou il y a deja un \n dans buffer pour ne pas perdre current read
+		if (!buffer)
+			return (NULL);
+	while (ft_strrchr(buffer, '\n') == NULL && len != 0) //tant que il n'y a pas de \n dans buffer ou qu'on a pas atteint la fin du fichier
+	{
+		len = read(fd, current_read, BUFFER_SIZE); //on lit 
+		if (len < 0)
+			return (NULL);
+		current_read[len] = '\0';
+		buffer = ft_buffjoin(buffer, current_read, buffer); //on join buffer et la string qu'on a lu (la fonction free l'ancien buffer)
+		if (!buffer)
+			return (NULL);
+	}
+	return (buffer);
+}
+
+char	*r_value(char **buffer)
+{
 	int		len;
 	char	*retour;
-	char 	*nl_position;
+	char	*nl_position;
 	int		i;
 
-	temp = NULL;
-	len = 1;
-	while (ft_strrchr(*str, '\n') == NULL && len != 0)
-	{
-		//printf(" str address %p\n", *str);
-		temp = *str;
-		*str = ft_strjoin(*str, current_read); //on envoie 2 string, str free par swap et current que l'on réecrit donc pas de free
-		if (!*str)
-			return (NULL);
-		free(temp); //free ancienne str
-		if (ft_strrchr(*str, '\n') == NULL)
-		{	len = read(fd, current_read, BUFFER_SIZE);
-			if (len < 0)
-				return (NULL);
-			current_read[len] = '\0';		
-		}
-	}
-	//printf(" str address after while %p\n", *str);
-	nl_position = ft_strrchr(*str, '\n');
+	nl_position = ft_strrchr(*buffer, '\n'); //on cherche si \n est dans buffer
 	if (nl_position)
-	{
-		len = nl_position - *str + 1;
-		retour = (char *) malloc(sizeof(char) * len+1);
-		if (!retour)
-			return (NULL);
-		i = 0;
-		while (len--)
-		{
-			retour[i] = (*str)[i];
-			i++;
-		}
-		retour[i] = '\0';
-		temp = *str;
-		*str = ft_strjoin("", nl_position+1);
-		if (!*str)
-			return (NULL);
-		//printf(" str address after retour %p\n", *str);
-		free(temp);
-		free(current_read);
-		return (retour);
-	}
+		len = nl_position - *buffer + 1; //si oui la taille de la string retour et la diff entrele debut et la position de \n
 	else
+		len = ft_strlen(*buffer); // si non len c'est la taille de buffer
+	retour = (char *) malloc(sizeof(char) * len + 1); //on alloue retour
+	if (!retour)
+		return (free_str(*buffer));
+	i = 0; 
+	while (len--) //on copie la string dans retour
 	{
-		if ((*str)[0] == '\0')
-		{
-			printf(" str address after end big f %p\n", *str);
-			free(*str);
-			free(current_read);
-			return (NULL);
-		}
-		len = ft_strlen(*str);
-		retour = (char *) malloc(sizeof(char) * len +1);
-		if (!retour)
-			return (NULL);
-		i = 0;
-		while (len--)
-		{
-			retour[i] = (*str)[i];
-			i++;
-		}
-		retour[i] = '\0';
-		temp = *str;
-		*str = ft_strjoin("", *str+i);
-		if (!*str)
-			return (NULL);
-		free(temp);
-		//printf(" str address after no nl %p\n", *str);
-		free(current_read);
-		//printf("temp %p", temp);
-		return (retour);
+		retour[i] = (*buffer)[i];
+		i++;
 	}
+	retour[i] = '\0';
+	if (nl_position)
+		*buffer = ft_buffjoin("", nl_position + 1, *buffer); //s'il rete des choses dans buffer alloue une nouvelle string sans la chaine dans retour
+	else
+		*buffer = ft_buffjoin("", *buffer + i, *buffer); //si non alloue un \0 globalement 
+	if (!(*buffer))
+		return (free_str(*buffer));
+	return (retour);
 }
 
-void	free_str(char **str)
+char	*ft_buffjoin(char *buffer, char *str, char *to_free)
 {
-	if (!str)
-		free(*str);
-	str = NULL;
+	buffer = ft_strjoin(buffer, str);//on alloue la string jointe a buffer
+	if (!buffer)
+		return (NULL);
+	free(to_free); // on free le buffer
+	return (buffer);
 }
 
-/*int main(void)
+char	*free_str(char *str)//sert a gagner de la place sur les retour erreur
 {
-	int	 fd = open("big_line.txt", O_RDONLY);
-	char	*line;
-	if (fd <= 0)
-	write(1, "fail to open file", 17);
-	printf("fd = %d\n", fd);
-	line = get_next_line(fd);
-	printf("%s", line);
-	while (line != NULL)
+	if (str != NULL)
 	{
-		printf("%s", line);
-		if (line != NULL)
-			free(line);
-		line = get_next_line(fd);
-		
+		free(str);
+		str = NULL;
 	}
-	return (0);
-}*/
+	return (NULL);
+}

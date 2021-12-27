@@ -6,7 +6,7 @@
 /*   By: ldubuche <laura.dubuche@gmail.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/22 17:13:58 by ldubuche          #+#    #+#             */
-/*   Updated: 2021/12/27 13:28:18 by ldubuche         ###   ########.fr       */
+/*   Updated: 2021/12/27 14:14:35 by ldubuche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,6 @@ char	*get_next_line(int fd)
 	if (!current_read)
 		return (NULL);
 	len = read(fd, current_read, BUFFER_SIZE); //on lit la premiere ligne
-	printf("len = %d\n", len);
 	if (len < 0)
 		return (free_str(current_read));
 	current_read[len] = '\0';
@@ -41,7 +40,6 @@ char	*get_next_line(int fd)
 	}
 	else if (len == 0 && (!buffer || buffer[0] == '\0')) //si on ne lit rien et qu'on est a la fin du buffer on retourne NULL
 	{
-		printf("good condition enter\n");
 		free_str(buffer);
 		return (free_str(current_read));
 	}
@@ -118,10 +116,8 @@ char	*ft_buffjoin(char *buffer, char *str, char *to_free)
 
 char	*free_str(char *str)//sert a gagner de la place sur les retour erreur
 {
-	printf("enter free\n");
 	if (str != NULL)
 	{
-		printf("not null\n");
 		free(str);
 		str = NULL;
 	}

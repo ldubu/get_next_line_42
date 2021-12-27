@@ -32,7 +32,6 @@ char	*ft_strrchr(const char *s, int c)
 		return ((char *)s + b);
 	while (--b >= 0)
 	{
-		//printf("strrchr %d", b);
 		if (*s == a)
 			return ((char *)s);
 		s++;
