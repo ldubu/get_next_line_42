@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line_utils.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ldubuche <laura.dubuche@gmail.com>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/12/27 14:37:51 by ldubuche          #+#    #+#             */
+/*   Updated: 2021/12/27 15:28:35 by ldubuche         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line_bonus.h"
 
 char	*ft_strjoin(char const *s1, char const*s2)
@@ -57,7 +69,7 @@ char	*ft_strdup(const char *s1)
 	return (cpy);
 }
 
-size_t	ft_strlen(const char *s) //retirer si pas utilisé
+size_t	ft_strlen(const char *s)
 {
 	size_t	lenght;
 
@@ -65,4 +77,14 @@ size_t	ft_strlen(const char *s) //retirer si pas utilisé
 	while (*s++)
 		lenght++;
 	return (lenght);
+}
+
+char	*free_str(char *str)
+{
+	if (str != NULL)
+	{
+		free(str);
+		str = NULL;
+	}
+	return (NULL);
 }
